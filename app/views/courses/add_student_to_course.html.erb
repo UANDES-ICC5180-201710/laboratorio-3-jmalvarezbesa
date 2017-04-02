@@ -1,0 +1,23 @@
+
+<h1>Students not in this Course</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>firstName</th>
+      <th>lastName</th>
+      <th colspan="1"></th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @people_not_in_course.each do |person| %>
+      <tr>
+        <td><%= person.first_name %></td>
+        <td><%= person.last_name %></td>
+        <td><%= link_to "Add to course", {:controller => "courses", :action => "add_student_to_course", :student_id => person.id, :course_id =>@course.id }%></td>
+    <% end %>
+  </tbody>
+</table>
+
+<%= link_to 'Back', @course %>

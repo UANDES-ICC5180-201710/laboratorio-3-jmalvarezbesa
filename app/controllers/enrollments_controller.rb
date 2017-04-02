@@ -28,8 +28,18 @@ class EnrollmentsController < ApplicationController
 
     respond_to do |format|
       if @enrollment.save
-        format.html { redirect_to @enrollment, notice: 'Enrollment was successfully created.' }
-        format.json { render :show, status: :created, location: @enrollment }
+        actual_course = Course.find(@enrollment.course_id)
+        actual_course_name = actual_course.title
+        quota = actual_course.quota
+        actual_size = Enrollment.where(:course => @enrollment.course_id).size
+        if actual_size <= quota
+          format.html { redirect_to @enrollment, notice: 'Enrollment was successfully created.' }
+          format.json { render :show, status: :created, location: @enrollment }
+        else
+          @enrollment.destroy
+          format.html {render :new }
+          flash[:notice] = ('Course "' + actual_course_name + '" quota exceeded')
+        end
       else
         format.html { render :new }
         format.json { render json: @enrollment.errors, status: :unprocessable_entity }
@@ -59,6 +69,17 @@ class EnrollmentsController < ApplicationController
       format.html { redirect_to enrollments_url, notice: 'Enrollment was successfully destroyed.' }
       format.json { head :no_content }
     end
+  end
+
+  def get_students_in_course(course_id)
+    people_in_course = Enrollment.where("course_id = ?", course_id)
+    list = Array.new([])
+
+    for person_course in people_in_course
+      person = Person.find_by(id: person_course.person_id)
+      list.push(person)
+    end
+    return list
   end
 
   private

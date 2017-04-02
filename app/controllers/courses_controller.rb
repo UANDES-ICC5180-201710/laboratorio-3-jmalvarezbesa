@@ -4,17 +4,26 @@ class CoursesController < ApplicationController
   # GET /courses
   # GET /courses.json
   def index
-    @courses = Course.all
+    query = params[:query]
+    if query != nil
+      @courses = Course.where(title: query)
+    else
+      @courses = Course.all
+    end
   end
 
   # GET /courses/1
   # GET /courses/1.json
   def show
+    @people_in_course = get_students_in_course(@course.id)
+    teacher = Person.find_by(id: @course.person_id)
+    @teacher_name = teacher.first_name + " " + teacher.last_name
   end
 
   # GET /courses/new
   def new
     @course = Course.new
+    @professors = Person.where("is_professor = True")
   end
 
   # GET /courses/1/edit
@@ -61,6 +70,38 @@ class CoursesController < ApplicationController
     end
   end
 
+  def add_student_to_course
+    if params[:student_id]
+      new_person_course = Enrollment.new
+      new_person_course.person_id = params[:student_id]
+      new_person_course.course_id = params[:course_id]
+      new_person_course.save
+    end
+
+    course_id = params[:course_id]
+    @course = Course.find_by(id: course_id)
+    @people_not_in_course = get_students_not_in_course(course_id)
+  end
+
+  def get_students_in_course(course_id)
+    people_in_course = Enrollment.where("course_id = ?", course_id)
+    list = Array.new([])
+
+    for person_course in people_in_course
+      person = Person.find_by(id: person_course.person_id)
+      list.push(person)
+    end
+    return list
+  end
+
+  def get_students_not_in_course(course_id)
+    people_in_course = get_students_in_course(course_id)
+    all_people = Person.all
+    list = Array.new([])
+    list = all_people - people_in_course
+    return list
+  end
+
   private
     # Use callbacks to share common setup or constraints between actions.
     def set_course
@@ -76,6 +117,6 @@ class CoursesController < ApplicationController
         teacher = nil
       end
 
-      params.require(:course).permit(:title, :code).merge(:teacher => teacher)
+      params.require(:course).permit(:title, :code, :quota).merge(:teacher => teacher)
     end
 end
